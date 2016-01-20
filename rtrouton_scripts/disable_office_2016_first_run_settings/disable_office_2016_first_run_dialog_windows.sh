@@ -22,65 +22,44 @@
 #
 # submit_diagnostic_data_to_microsoft=true
 #
-# By default, the values in this script are set to send no diagnostic data to Microsoft:
+# By default, the values in this script are set to send no diagnostic data to Microsoft
+# and turn off all FirstRun Dialogs:
 
 submit_diagnostic_data_to_microsoft=false
+turn_off_first_run_setup=true
+
+# Define what Apps are part of Office 2016, if anything changes in the future
+Office2016Apps=(Excel OneNote Outlook PowerPoint Word)
 
 
-DisableOffice2016FirstRun(){
+DisableOffice2016FirstRun()
+{
+	# This function will configure the first run dialog windows for all Office 2016 apps.
+	# It will also set the desired diagnostic info settings for Office application.
+	
+	# Special check for OneNote as the application name and PLIST name are not the same.
+	if [[ $app == OneNote ]]
+	then
+		app="onenote.mac";
+	fi
 
-   # This function will disable the first run dialog windows for all Office 2016 apps.
-   # It will also set the desired diagnostic info settings for Office application.
-
-   /usr/bin/defaults write /Library/Preferences/com.microsoft."$app" kSubUIAppCompletedFirstRunSetup1507 -bool true
+   /usr/bin/defaults write /Library/Preferences/com.microsoft."$app" kSubUIAppCompletedFirstRunSetup1507 -bool "$turn_off_first_run_setup"
    /usr/bin/defaults write /Library/Preferences/com.microsoft."$app" SendAllTelemetryEnabled -bool "$submit_diagnostic_data_to_microsoft"
 
-   # Outlook and OneNote require one additional first run setting to be disabled
-
-   if [[ $app == "Outlook" ]] || [[ $app == "onenote.mac" ]]; then
-
-     /usr/bin/defaults write /Library/Preferences/com.microsoft."$app" FirstRunExperienceCompletedO15 -bool true
-
-   fi
-
+	# Outlook and OneNote require one additional first run setting to be disabled
+	if [[ $app == "Outlook" ]] || [[ $app == "onenote.mac" ]]; then
+		/usr/bin/defaults write /Library/Preferences/com.microsoft."$app" FirstRunExperienceCompletedO15 -bool "$turn_off_first_run_setup"
+	fi
 }
 
 
+# do the work now
+for appname in ${Office2016Apps[*]}
+do
+	if [[ -e "/Applications/Microsoft Office 2011/Microsoft $appname.app" ]]; then
+	app=$appname
+	ConfigureOffice2016FirstRun
+	fi
+done
 
-# Run the DisableOffice2016FirstRun function for each detected Office 2016
-# application to disable the first run dialogs for that Office 2016 application.
-
-if [[ -e "/Applications/Microsoft Excel.app" ]]; then
-app=Excel
-
-DisableOffice2016FirstRun
-
-fi
-
-if [[ -e "/Applications/Microsoft OneNote.app" ]]; then
-app=onenote.mac
-
-DisableOffice2016FirstRun
-
-fi
-
-if [[ -e "/Applications/Microsoft Outlook.app" ]]; then
-app=Outlook
-
-DisableOffice2016FirstRun
-
-fi
-
-if [[ -e "/Applications/Microsoft PowerPoint.app" ]]; then
-app=Powerpoint
-
-DisableOffice2016FirstRun
-
-fi
-
-if [[ -e "/Applications/Microsoft Word.app" ]]; then
-app=Word
-
-DisableOffice2016FirstRun
-
-fi
+exit 0
